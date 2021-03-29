@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+  <div class="row">
+    <div class="col-lg-6">
+      <h2>User Profile</h2>
+      <form id="update-user">
+        <div class="form-group">
+          <label for="name">Name</label>
+          <input type="text" class="form-control" id="name" placeholder="Name" value="{{User.Name}}">
+        </div>
+
+        <div class="form-group">
+          <label for="email">Email</label>
+          <input type="text" class="form-control" id="email" placeholder="Email" value="{{User.Email}}">
+        </div>
+
+        <p id="update-user-alert" class="alert alert-danger" hidden></p>
+
+        <div class="form-group">
+          {% if !User.EmailVerified.Bool %}
+          <button class="btn btn-secondary form-control" onclick="resendEmailVerification(event)">Resend Verification Email</button>
+          {% endif %}
+          <button id="btn-save" class="btn btn-primary form-control" onclick="saveUser(event)">Save</button>
+        </div>
+      </form>
+
+      <h2>Change Password</h2>
+      <form id="change-password">
+        <div class="form-group">
+          <label for="current">Current Password</label>
+          <input type="password" class="form-control" id="current" placeholder="Password" value="">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" class="form-control" id="password" placeholder="Password" value="">
+        </div>
+
+        <div class="form-group">
+          <label for="retype">Retype Password</label>
+          <input type="password" class="form-control" id="retype" placeholder="Password" value="">
+        </div>
+
+        <p id="change-password-alert" class="alert alert-danger" hidden></p>
+
+        <div class="form-group">
+          <button id="btn-change-password" class="btn btn-primary form-control" onclick="changePassword(event)">Change Password</button>
+        </div>
+      </form>
+
+      <h2>Import Recipes</h2>
+      <p>Use this form to upload a file containing recipes.  The file should
+      be in CSV format with three columns (name, source, ingredients).
+      The ingredients should be separated by colons (:).</p>
+      <form action="/family/{{User.DefaultFamilyId}}/recipes.html?import_id={{ImportId}}" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" id="file">
+        <input type="submit" value="Upload File" name="submit">
+      </form>
+    </div>
+
+    <div class="col-lg-6">
+      <h2>Your Families</h2>
+
+      {% for family in Families %}
+      <div>
+        <form>
+          <div class="form-group">
+            <label for="name-{{family.Id}}">Name</label>
+            <input type="text" class="form-control" id="name-{{family.Id}}" placeholder="Name" value="{{family.Name}}">
+          </div>
+
+          <div class="form-group row">
+            <div class="col-sm-6">
+              <button id="btn-save" class="btn btn-primary form-control" onclick="saveFamily(event)">Save</button>
+            </div>
+
+            <div class="col-sm-6">
+              <button id="btn-delete" class="btn btn-danger form-control" onclick="deleteFamily(event)">Delete</button>
+            </div>
+          </div>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function saveUser(ev) {
+  ev.preventDefault();
+
+  var data = {
+    email: $("#email").val(),
+    name: $("#name").val()
+  };
+
+  $.ajax({
+    type: "PUT",
+    url: "/api/users/{{User.Id}}",
+    data: JSON.stringify(data)
+  }).then(function(response) {
+    $("#update-user-alert").text("Account details updated.");
+    $("#update-user-alert").removeAttr("hidden");
+  }).fail(function(xhr) {
+    if (xhr.status == 409) {
+      $("#update-user-alert").text("A user with that email address already exists.");
+    } else {
+      $("#update-user-alert").text("There was an error processing the request.");
+    }
+    $("#update-user-alert").removeAttr("hidden");
+  });
+}
+
+function resendEmailVerification(ev) {
+  ev.preventDefault();
+
+  $.ajax({
+    type: "POST",
+    url: "/api/users/{{User.Id}}/verification"
+  }).then(function(response) {
+    $("#update-user-alert").text("A verification email was sent.");
+    $("#update-user-alert").removeAttr("hidden");
+  }).fail(function(xhr) {
+    $("#update-user-alert").text("There was an error processing the request.");
+    $("#update-user-alert").removeAttr("hidden");
+  });
+}
+
+function changePassword(ev) {
+  ev.preventDefault();
+
+  var data = {
+    current: $("#current").val(),
+    password: $("#password").val()
+  };
+
+  if ($("#retype").val() !== data.password) {
+    $("#change-password-alert").text("The passwords do not match.");
+    $("#change-password-alert").removeAttr("hidden");
+    return;
+  }
+
+  $.ajax({
+    type: "PUT",
+    url: "/api/users/{{User.Id}}/password",
+    data: JSON.stringify(data)
+  }).then(function(response) {
+    $("#change-password")[0].reset();
+    $("#change-password-alert").text("Password changed.");
+    $("#change-password-alert").removeAttr("hidden");
+  }).fail(function(xhr) {
+    var response = JSON.parse(xhr.responseText);
+    $("#change-password-alert").text(response.message);
+    $("#change-password-alert").removeAttr("hidden");
+  });
+}
+</script>
+{% endblock %}

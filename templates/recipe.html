@@ -1,0 +1,232 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3 col-md-4 col-sm-4">
+      <div class="panel panel-default fixed-panel">
+        <div class="panel-heading">
+          Available Recipes
+        </div>
+
+        <p>Click on a recipe to edit it.</p>
+
+        <ul class="dishes">
+          {% for recipe in Recipes %}
+          <li>
+            <a class="dish" href="/family/{{FamilyId}}/recipe/{{recipe.Id}}/edit.html">
+              <p class="dish">
+                {{recipe.Name}}
+              </p>
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+
+        <button type="button" class="btn btn-block btn-outline-secondary" onclick="newRecipe()">Create New Recipe</button>
+      </div>
+    </div>
+
+    <div class="col-lg-9 col-md-8 col-sm-8">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          Edit Recipe
+        </div>
+
+        <div class="panel-body">
+          <form>
+            <div class="form-group">
+              <label for="name">Name</label>
+              <input type="text" class="form-control" id="name" placeholder="Name" value="{{Recipe.Name}}">
+            </div>
+
+            <div class="form-group">
+              <label for="source">Source</label>
+              <input type="text" class="form-control" id="source" placeholder="Source" value="{{Recipe.Source.String}}">
+            </div>
+
+            <div class="form-group">
+              <label for="servings">Servings</label>
+              <input type="number" class="form-control" id="servings" placeholder="Servings" value="{{Recipe.Servings.Int64}}">
+            </div>
+
+            {% for ingredient in Ingredients %}
+            <div class="form-group row ingredient" data-ingredient-id="{{ingredient.Id}}">
+              <div class="col-sm-6">
+                <label for="name-{{ingredient.Id}}">Name</label>
+                <input type="text" class="form-control ingredient-name" id="name-{{ingredient.Id}}" placeholder="Name" value="{{ingredient.Name}}">
+              </div>
+
+              <div class="col-sm-4">
+                <label for="amount-{{ingredient.Id}}">Amount</label>
+                <input type="text" class="form-control ingredient-amount" id="amount-{{ingredient.Id}}" placeholder="Amount" value="{{ingredient.Amount.String}}">
+              </div>
+
+              <div class="col-sm-2">
+                <label style="min-height: 1em; min-width: 1px"></label>
+                <button class="btn btn-danger form-control" onclick="removeIngredient(event)">Remove</button>
+              </div>
+            </div>
+            {% endfor %}
+
+            <div id="button-row" class="form-group row">
+              <div class="col-sm-4">
+                <button class="btn btn-secondary form-control" onclick="addIngredient(event)">Add Ingredient</button>
+              </div>
+              <div class="col-sm-4">
+                <button id="btn-save" class="btn btn-primary form-control" onclick="saveRecipe(event)">Save</button>
+              </div>
+              {% if Recipe.Id %}
+              <div class="col-sm-4">
+                <button id="btn-delete" class="btn btn-danger form-control" onclick="deleteRecipe(event)">Delete</button>
+              </div>
+              {% else %}
+              <div class="col-sm-4"></div>
+              {% endif %}
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+function addIngredient(ev) {
+    ev.preventDefault();
+
+    var html = '<div class="form-group row ingredient">' +
+        '<div class="col-sm-6">' +
+        '<label>Name</label>' +
+        '<input type="text" class="form-control ingredient-name" placeholder="Name" />' +
+        '</div><div class="col-sm-4">' +
+        '<label>Amount</label>' +
+        '<input type="text" class="form-control ingredient-amount" placeholder="Amount" />' +
+        '</div><div class="col-sm-2">' +
+        '<label style="min-height: 1em; min-width: 1px"></label>' +
+        '<button class="btn btn-danger form-control" onclick="removeIngredient(event)">Remove</button>' +
+        '</div></div>';
+    $("#button-row").before(html);
+}
+
+function clearForm() {
+    $("#name").val("");
+    $("#source").val("");
+    $("#servings").val("");
+    $("div.ingredient").each(function(index) {
+        $(this).remove();
+    });
+    $("button.form-control").prop("disabled", false);
+}
+
+function newRecipe() {
+    window.location.replace("/family/{{FamilyId}}/recipes.html");
+};
+
+function removeIngredient(ev, id) {
+    ev.preventDefault();
+    ev.target.parentNode.parentNode.style.display = "none";
+}
+
+function saveRecipe(ev) {
+    ev.preventDefault();
+    $("button.form-control").prop("disabled", true);
+
+    var recipe = {
+        name: $("#name").val(),
+        source: $("#source").val(),
+        servings: parseInt($("#servings").val(), 10)
+    };
+
+    {% if Recipe.Id %}
+    var p_recipe = $.ajax({
+        url: "/api/family/{{FamilyId}}/recipes/{{Recipe.Id}}",
+        type: "PUT",
+        data: JSON.stringify(recipe)
+    });
+    {% else %}
+    var p_recipe = $.ajax({
+        url: "/api/family/{{FamilyId}}/recipes",
+        type: "POST",
+        data: JSON.stringify(recipe)
+    });
+    {% endif %}
+
+    var saveIngredient = function(obj) {
+        return function(recipe) {
+            var ingredient_id = obj.data('ingredient-id');
+            var ingredient = {
+                name: obj.find(".ingredient-name").val(),
+                amount: obj.find(".ingredient-amount").val(),
+                recipe_id: recipe.id
+            };
+            var request = {
+                data: JSON.stringify(ingredient)
+            }
+            if (ingredient_id) {
+                request.type = "PUT";
+                request.url = "/api/family/{{FamilyId}}/ingredients/" + ingredient_id;
+            } else {
+                request.type = "POST";
+                request.url = "/api/family/{{FamilyId}}/ingredients";
+            }
+
+            return $.ajax(request).then(function(response) {
+                obj.attr('data-ingredient-id', response.id);
+                return recipe;
+            });
+        };
+    };
+
+    var p = p_recipe;
+    $("div.ingredient:visible").each(function(index) {
+        p = p.then(saveIngredient($(this), p_recipe));
+    });
+
+    $("div.ingredient:hidden").each(function(index) {
+        var ingredient_id = $(this).data('ingredient-id');
+        if (ingredient_id) {
+            p = p.then(function() {
+                return $.ajax({
+                    url: "/api/family/{{FamilyId}}/ingredients/" + ingredient_id,
+                    type: "DELETE"
+                });
+            });
+        }
+        $(this).remove();
+    });
+
+    p.then(clearForm);
+}
+
+{% if Recipe.Id %}
+function deleteRecipe(ev) {
+    ev.preventDefault();
+    $("button.form-control").prop("disabled", true);
+
+    var p = $.ajax({
+        url: "/api/family/{{FamilyId}}/recipes/{{Recipe.Id}}",
+        type: "DELETE"
+    });
+
+    $("div.ingredient").each(function(index) {
+        var ingredient_id = $(this).data('ingredient-id');
+        if (ingredient_id) {
+            p = p.then(function() {
+                return $.ajax({
+                    url: "/api/family/{{FamilyId}}/ingredients/" + ingredient_id,
+                    type: "DELETE"
+                });
+            });
+        }
+    });
+
+    p.then(function() {
+        window.location.replace("/family/{{FamilyId}}/recipes.html");
+    });
+}
+{% endif %}
+</script>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+  
+{% block content %}
+<div class="container d-print-none">
+    <a class="btn btn-outline-secondary float-left" href="/family/{{FamilyId}}/view.html?from={{PrevStart}}">
+		<span class="glyphicon glyphicon-arrow-left"></span> Previous week
+	</a>
+	<a class="btn btn-outline-secondary float-right" href="/family/{{FamilyId}}/view.html?from={{NextStart}}">
+		Next week <span class="glyphicon glyphicon-arrow-right"></span>
+	</a>
+    <div class="clearfix"></div>
+</div>
+
+<div class="container">
+{% for week in Weeks %}
+{% if (forloop.Counter-1) % 2 == 0 %}
+  <div class="row">
+{% endif %}
+
+    <div class="col-lg-6 col-md-6 col-sm-12">
+      <h2 class="center">{{week.Start.Format("Jan 2")}} - {{week.End.Format("Jan 2")}}</h2>
+      <ul class="weekdays">
+        {% for day in week.Days %}
+        <li class="day">
+          <h3 class="group">{{day.Date.Format("Mon")}}</h3>
+          <ul class="meals">
+            {% for meal in day.Meals %}
+            <li>
+              {{meal.Label}}:
+              {% for dish in meal.Dishes %}
+                <span>{{dish.Name}}</span>
+                {% if dish.Source.Valid %}
+                <span>&lt;{{dish.Source.String}}&gt;</span>
+                {% endif %}
+              {% endfor %}
+            </li>
+            {% endfor %}
+          </ul>
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+{% if forloop.Counter % 2 == 0 %}
+  </div>
+{% endif %}
+{% endfor %}
+</div>
+{% endblock %}

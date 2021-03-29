@@ -1,0 +1,17 @@
+version: "2.4"
+
+services:
+  mealplanner:
+    build: .
+    image: mealplanner
+
+    mem_limit: 200m
+    mem_reservation: 100m
+
+    ports:
+      - "127.0.0.1:3000:3000"
+
+    restart: always
+
+    volumes:
+      - ./mealplanner.db:/app/mealplanner.db

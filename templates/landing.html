@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner</title>
+
+    <link rel="stylesheet" href="/styles/bootstrap-4.0.0-beta.css">
+    <link rel="stylesheet" href="styles/style.css">
+    <link rel="stylesheet" media="print" href="styles/print.css">
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+    <base href="/">
+  </head>
+  <body>
+    <div id="wrapper">
+      <header>
+        <div class="container">
+          <div class="float-lg-right login-box">
+            <p id="login-alert" class="alert alert-danger" hidden></p>
+            <form class="form-inline">
+              <input id="email" class="form-control mr-sm-2" type="text" placeholder="Email" aria-label="Search">
+              <input id="password" class="form-control mr-sm-2" type="password" placeholder="Password" aria-label="Search">
+              <button class="btn btn-outline-success my-2 my-sm-0" type="submit" onclick="signIn(event)">Sign in</button>
+            </form>
+            {% if user %}
+            <p>
+              Welcome back, {{user.Name | capfirst}}!
+              <a href="/family/{{user.DefaultFamilyId}}/view.html">Click here to return to your meal plan.</a>
+            </p>
+            {% endif %}
+          </div>
+          <div class="clearfix"></div>
+          <div class="logo-box">
+            <div>
+              <img src="images/logo.png" width="120px">
+            </div>
+            <div>
+              <h3>Better eating through better planning.</h3>
+            </div>
+            <div>
+              <a class="btn btn-success" href="/sign-up.html">Get started today!</a>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div id="content" class="container landing-body">
+        <div class="row">
+          <div class="col-sm-2"></div>
+          <div class="col-sm-8">
+            <p class="lead"><strong>What's for dinner tonight?</strong>
+            <p class="lead">Meal Planner helps you create weekly meal
+            plans that work with your taste and schedule.</p>
+            <p class="lead">Discover the joy of meal planning!</p>
+          </div>
+          <div class="col-sm-2"></div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-4">
+            <p><img src="images/note.png" height="120px"></p>
+            <p><strong>Add your favorite recipes.</strong></p>
+            <p>You know what your family likes. Add your favorite recipes
+            from any source, from recipe books or online.</p>
+          </div>
+          <div class="col-sm-4">
+            <p><img src="images/calendar.png" height="120px"></p>
+            <p><strong>Plan meals for the next week or month.</strong></p>
+            <p>The drag-and-drop calendar makes it quick and easy to
+            plan ahead, and changing your meal plan is just as easy.</p>
+          </div>
+          <div class="col-sm-4">
+            <p><img src="images/shopping.png" height="120px"></p>
+            <p><strong>Take your shopping list with you.</strong></p>
+            <p>Print a copy of your shopping list or use your
+            phone. HomeMealPlan.com automatically organizes your
+            ingredients by date and type for easy shopping.</p>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="col-sm-2"></div>
+          <div class="col-sm-8">
+            <p class="lead">The meal planner is open source and available on <a href="GitHub">https://github.com/lhartung/mealplanner</a></p>
+          </div>
+          <div class="col-sm-2"></div>
+        </div>
+      </div>
+
+      <footer>
+        <div class="container">
+          <p class="copyright">
+            All rights reserved &copy; 2021 Lance Hartung
+          </p>
+          <div class="clearfix"></div>
+        </div>
+      </footer>
+    </div>
+
+    <script src="/scripts/jquery-3.2.1.min.js"></script>
+    <script src="/scripts/popper-1.11.0.min.js"></script>
+    <script src="/scripts/bootstrap-4.0.0-beta.min.js"></script>
+    <script src="/scripts/mealplanner.js"></script>
+  </body>
+</html>

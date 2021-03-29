@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+  
+{% block content %}
+<div class="container">
+  <div id="error-alert" class="alert alert-danger" role="alert" hidden>
+    There was an error saving the change. Please try again.
+  </div>
+
+  {% if Sections %}
+  <div class="row">
+    {% for section_name, section in Sections %}
+    <div class="col-lg-3 col-md-4 col-sm-6 col-xs-12"
+         data-section-id="{{section.Id}}"
+         ondrop="handleDrop(event)"
+         ondragleave="handleDragLeave(event)"
+         ondragover="handleDragOver(event)">
+      <h2>{{section_name}}</h2>
+        {% for group in section.OrderedGroups %}
+        <div class="d-flex flex-row dnd-contents">
+          <div class="p-2">
+            <h3 class="ingredients">{{group.Date.Format("1/2")}}</h3>
+          </div>
+          <div class="p-2">
+            <ul class="ingredients" data-date='{{group.Date.Format("2006-01-02")}}'>
+              {% for item in group.Ingredients %}
+              <li class="ingredient"
+                  id="ingredient-li-{{item.IngredientId}}"
+                  data-ingredient-id="{{item.IngredientId}}"
+                  draggable="true"
+                  ondragstart="handleDragStart(event)"
+                  ondragend="handleDragEnd(event)">
+                <input type="checkbox" 
+                       onclick="handleClick(this)"
+                       data-ingredient-id="{{item.IngredientId}}"
+                       data-section-id="{{section.Id}}"
+                       {% if item.Have.Bool %}checked{% endif %}>
+                <span>{{item.Name}}</span>
+                {% if item.Amount.Valid %}
+                ({{item.Amount.String}})
+                {% endif %}
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="row">
+    <p>There is nothing in your shopping list right now!</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block script %}
+<script id="ingredient-template" type="text/x-custom-template">
+  <div class="d-flex flex-row dnd-contents">
+    <div class="p-2">
+      <h3 class="ingredients"></h3>
+    </div>
+    <div class="p-2">
+      <ul class="ingredients">
+      </ul>
+    </div>
+  </div>
+</script>
+
+<script>
+function handleClick(cb) {
+    var ingredient_id = cb.getAttribute("data-ingredient-id");
+
+    cb.classList.add("bg-warning");
+
+    var data = {
+        class_id: parseInt(cb.getAttribute("data-section-id")),
+        have: cb.checked
+    };
+
+    $.ajax({
+        url: "/api/family/{{FamilyId}}/ingredients/" + ingredient_id,
+        type: "PUT",
+        data: JSON.stringify(data)
+    }).then(function() {
+        cb.classList.remove("bg-warning");
+    }).fail(function() {
+        $("#error-alert").show();
+    });
+}
+
+function handleDragOver(ev) {
+    if (!ev.target.getAttribute("ondrop"))
+        return false;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+    ev.dataTransfer.dropEffect = "move";
+
+    ev.target.classList.add("dnd-over");
+
+    return false;
+}
+
+function handleDragStart(ev) {
+    ev.dataTransfer.setData("text/plain", "#" + ev.target.id);
+    ev.dataTransfer.setData("text/html", ev.target.outerHTML);
+    ev.dataTransfer.effectAllowed = "move";
+    $(".dnd-contents").addClass("no-pointer-events");
+}
+
+function handleDragEnd(ev) {
+    $(".dnd-contents").removeClass("no-pointer-events");
+}
+
+function handleDragLeave(ev) {
+    ev.target.classList.remove("dnd-over");
+}
+
+function handleDrop(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    var element = $(ev.dataTransfer.getData("text/plain"));
+    var old_parent = element.parent();
+    var ingredient_id = element.attr("data-ingredient-id");
+
+    element.addClass("bg-warning");
+
+    var data = {
+        class_id: parseInt(ev.target.getAttribute("data-section-id"))
+    };
+
+    $.ajax({
+        url: "/api/family/{{FamilyId}}/ingredients/" + ingredient_id,
+        type: "PUT",
+        data: JSON.stringify(data)
+    }).then(function() {
+        element.removeClass("bg-warning");
+    }).fail(function() {
+        $("#error-alert").show();
+    });
+
+    var date = old_parent.attr("data-date");
+    var new_li = $(ev.dataTransfer.getData("text/html"));
+
+    var make_from_template = function() {
+        var date_pretty = old_parent.parent().parent().find("h3").text();
+
+        var template = $($("#ingredient-template").html());
+        template.find("h3").text(date_pretty);
+        template.find("ul")
+            .attr("data-date", date)
+            .append(new_li);
+        return template;
+    }
+
+    var inserted = false;
+    $(ev.target).children(".dnd-contents").each(function() {
+        if (inserted) {
+            return;
+        }
+
+        var ul = $(this).find("ul");
+        if (ul.attr("data-date") === date) {
+            ul.append(new_li);
+            inserted = true;
+        } else if (ul.attr("data-date") > date) {
+            $(this).before(make_from_template());
+            inserted = true;
+        }
+    });
+
+    if (!inserted) {
+        $(ev.target).append(make_from_template());
+    }
+
+    element.remove();
+    if (old_parent.children("li").length == 0) {
+        old_parent.parent().parent().remove();
+    }
+
+    $(".dnd-over").removeClass("dnd-over");
+}
+</script>
+{% endblock %}

@@ -1,0 +1,2 @@
+# Do not copy database into the image.
+mealplanner.db

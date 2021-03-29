@@ -1,0 +1,214 @@
+{% extends "base.html" %}
+  
+{% block content %}
+<div class="container-fluid">
+  <div class="row">
+    <div class="col-lg-3 col-md-4 col-sm-4">
+      <div class="panel panel-default fixed-panel">
+        <div class="panel-heading">
+          Available Recipes
+        </div>
+
+        <ul id="list-available"
+            class="dishes dnd-list"
+            ondrop="handleDrop(event)"
+			ondragleave="handleDragLeave(event)"
+            ondragover="handleDragOver(event)">
+          {% for dish in Available %}
+          <li id="dish-{{dish.Id}}"
+              {% if dish.Fixed %}data-fixed{% endif %}
+              data-recipe-id="{{dish.Id}}"
+              draggable="true"
+              ondragstart="handleDragStart(event)"
+              ondragend="handleDragEnd(event)">
+            <p class="dish">
+              {% if dish.Fixed %}
+              <i class="fa fa-lock" aria-hidden="true"></i>
+              {% endif %}
+              {{dish.Name}}
+            </p>
+          </li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+
+    <div class="col-lg-9 col-md-8 col-sm-8">
+      <div class="panel panel-default fixed-panel">
+        <div class="panel-heading">
+          Planned Meals
+        </div>
+
+        <a class="btn btn-outline-secondary btn-block"
+           href="/family/{{FamilyId}}/edit.html?from={{PrevStart}}&to={{To}}">
+          <i class="fa fa-arrow-up" aria-hidden="true"></i> Previous week
+        </a>
+
+        {% for day in Days %}
+        <div class="plan-day">
+          <h2>{{day.Date.Format("Monday, January 2, 2006")}}</h2>
+
+          {% for meal in day.Meals %}
+          <div class="dish-holder plan-meal">
+            <ul id="list-{{day.Date.Format("2006-01-02")}}-{{meal.Name}}"
+                class="dishes dnd-list"
+                ondrop="handleDrop(event)"
+				ondragleave="handleDragLeave(event)"
+                ondragover="handleDragOver(event)"
+                data-date="{{day.Date.Format("2006-01-02")}}"
+                data-meal="{{meal.Name}}">
+              {% for dish in meal.Dishes %}
+              <li id="dish-{{dish.RecipeId}}-{{dish.AssignmentId}}"
+                  data-assignment-id="{{dish.AssignmentId}}"
+                  {% if dish.Fixed %}data-fixed{% endif %}
+                  data-recipe-id="{{dish.RecipeId}}"
+                  draggable="true"
+                  ondragstart="handleDragStart(event)"
+                  ondragend="handleDragEnd(event)">
+                <p class="dish">{{dish.Name}}</p>
+              </li>
+              {% endfor %}
+            </ul>
+          </div>
+          {% endfor %}
+        </div>
+        {% endfor %}
+
+        <div class="clearfix"></div>
+        <a class="btn btn-outline-secondary btn-block"
+           href="/family/{{FamilyId}}/edit.html?from={{From}}&to={{NextEnd}}">
+          <i class="fa fa-arrow-down" aria-hidden="true"></i> Next week
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block script %}
+<script>
+var counter = 0;
+function generateId(prefix) {
+    return prefix + "-" + counter++;
+}
+
+function handleDragOver(ev) {
+    if (!ev.target.getAttribute("ondrop"))
+        return false;
+
+    ev.preventDefault();
+    ev.stopPropagation();
+	ev.dataTransfer.dropEffect = 'move';
+
+	ev.target.classList.add("dnd-over");
+
+	return false;
+}
+
+function handleDragStart(ev) {
+    ev.dataTransfer.setData("text/plain", ev.target.id);
+	ev.dataTransfer.effectAllowed = 'move';
+
+	ev.dataTransfer.setData('text/html', ev.target.outerHTML);
+
+    $("ul.dnd-list li").addClass("no-pointer-events");
+}
+
+function handleDragLeave(ev) {
+	ev.target.classList.remove("dnd-over");
+}
+
+function updateRecipeVisibility(recipe_id, show) {
+    var url = "/api/family/{{FamilyId}}/recipes/" + recipe_id;
+    var data = {
+        show: show
+    };
+    $.ajax({
+        url: url,
+        type: "PUT",
+        data: JSON.stringify(data)
+    });
+}
+
+function handleDrop(ev) {
+    ev.preventDefault();
+    ev.stopPropagation();
+
+    var element = $("#" + ev.dataTransfer.getData("text/plain"));
+
+    var fromAssignmentId = parseInt(element.attr("data-assignment-id"));
+    var data = {
+        date: ev.target.getAttribute('data-date'),
+        meal: ev.target.getAttribute('data-meal'),
+        recipe_id: parseInt(element.attr("data-recipe-id"))
+    };
+
+    var html = ev.dataTransfer.getData("text/html");
+    if (fromAssignmentId) {
+        var url = "/api/family/{{FamilyId}}/assignments/" + fromAssignmentId;
+        if (data.date && data.meal) {
+            // Reassign dish to a different meal.
+            ev.target.insertAdjacentHTML("beforeend", html);
+            $.ajax({
+                url: url,
+                type: "PUT",
+                data: JSON.stringify(data)
+            });
+        } else {
+            // Delete assignment and return dish to the available list.
+            if (element.attr("data-fixed") === undefined) {
+                var new_element = $(html);
+                new_element.attr("id", generateId("dish-x"));
+                new_element.attr("data-assignment-id", null);
+                ev.target.insertAdjacentHTML("beforeend", new_element.prop("outerHTML"));
+
+                updateRecipeVisibility(new_element.attr("data-recipe-id"), true);
+            }
+            $.ajax({
+                url: url,
+                type: "DELETE"
+            });
+        }
+        
+        element.remove();
+    } else {
+        // New assignment of recipe from available list.
+        var new_element = $(html);
+        new_element.addClass("text-danger");
+        new_element.attr({
+            "id": generateId("dish-x"),
+            "data-assignment-id": null,
+            "draggable": false
+        })
+        ev.target.insertAdjacentHTML("beforeend", new_element.prop("outerHTML"));
+
+        var callback = function(element_id) {
+            return function(response, status) {
+                var new_element = $("#" + element_id);
+                new_element.attr("data-assignment-id", response.id);
+                new_element.attr("draggable", true);
+                new_element.removeClass("text-danger");
+            }
+        };
+
+        $.post("/api/family/{{FamilyId}}/assignments",
+            JSON.stringify(data),
+            callback(new_element.attr("id"))
+        )
+
+        if (element.attr("data-fixed") === undefined) {
+            element.remove();
+            updateRecipeVisibility(element.attr("data-recipe-id"), false);
+        }
+    }
+
+    ev.target.classList.remove("dnd-over");
+
+    return false;
+}
+
+function handleDragEnd(ev) {
+    $("ul.dnd-list li").removeClass("no-pointer-events");
+}
+</script>
+{% endblock %}

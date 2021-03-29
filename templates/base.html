@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meal Planner</title>
+
+    <link rel="stylesheet" href="/styles/bootstrap-4.0.0-beta.css">
+    <link rel="stylesheet" href="/styles/style.css">
+    <link rel="stylesheet" media="print" href="/styles/print.css">
+
+    <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+    <script src="/scripts/fontawesome-771d6bc34f.js"></script>
+
+    <base href="/">
+  </head>
+  <body>
+    <header>
+      <div class="container">
+        <nav class="navbar navbar-expand-lg navbar-light">
+          <a class="navbar-brand" href="/landing.html">
+            <img src="/images/logo.png" height="30" alt="" class="d-inline-block align-top">
+            Meal Planner
+          </a>
+
+          <button class="navbar-toggler d-print-none" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+
+          <div class="collapse navbar-collapse d-print-none" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+              {% if Family.Id %}
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{Family.Id}}/view.html">View </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{Family.Id}}/edit.html">Edit </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{Family.Id}}/shopping.html">Shopping </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{Family.Id}}/recipes.html">Recipes </a>
+              </li>
+              {% else %}
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{User.DefaultFamilyId}}/view.html">View </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{User.DefaultFamilyId}}/edit.html">Edit </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{User.DefaultFamilyId}}/shopping.html">Shopping </a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" href="/family/{{User.DefaultFamilyId}}/recipes.html">Recipes </a>
+              </li>
+              {% endif %}
+            </ul>
+
+            <ul class="navbar-nav mr-auto my-2 my-lg-0">
+              <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="http://example.com" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  {{ User.Name | capfirst }}
+                </a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
+                  <a class="dropdown-item" href="/user/{{User.Id}}/profile.html">Profile</a>
+                  {% if User.Admin.Bool %}
+                  <div class="dropdown-divider"></div>
+                  <a class="dropdown-item" href="/admin/users.html">Users</a>
+                  {% endif %}
+                  <div class="dropdown-divider"></div>
+                  {% if false %}
+                  <h6 class="dropdown-header">Your Families</h6>
+                  {% for family in Families %}
+                  <a {% if family.Id == Family.Id %}class="dropdown-item active"{% else %}class="dropdown-item"{% endif %} href="/family/{{family.Id}}/view.html">
+                    {{ family.Name | capfirst }}
+                  </a>
+                  {% endfor %}
+                  <div class="dropdown-divider"></div>
+                  {% endif %}
+                  <a class="dropdown-item" href="#" onclick="signOut(event)">Sign Out</a>
+                </div>
+              </li>
+            </ul>
+          </div>
+        </nav>
+
+      {% if !User.EmailVerified.Bool %}
+      <p id="login-alert" class="alert alert-danger">
+        Your email address has not been verified yet. In order to
+        ensure your account's security please check your email for the
+        verification link. If you have not received the verification
+        email, please check the email address on your
+        <a href="/user/{{User.Id}}/profile.html">profile page</a>
+        and request a new verification email.
+      </p>
+      {% endif %}
+
+      {% if Expired %}
+      <p id="login-alert" class="alert alert-danger">
+        {% if AccountStatus == "trial" %}
+        Your free trial has expired.
+        {% else %}
+        Your subscription has expired.
+        {% endif %}
+        Please choose a paid subscription option on your
+        <a href="/user/{{User.Id}}/profile.html">profile page</a>
+        if you would like to continue using the meal planner.
+        With your support we can keep the meal planner running
+        and develop more great features. Thank you!
+      </p>
+      {% endif %}
+      </div>
+    </header>
+
+    {% block content %}
+    {% endblock %}
+
+    <script src="/scripts/jquery-3.2.1.min.js"></script>
+    <script src="/scripts/popper-1.11.0.min.js"></script>
+    <script src="/scripts/bootstrap-4.0.0-beta.min.js"></script>
+    <script src="/scripts/mealplanner.js"></script>
+
+    {% block script %}
+    {% endblock %}
+  </body>
+</html>

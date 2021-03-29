@@ -1,0 +1,59 @@
+{% extends "../base.html" %}
+
+{% block content %}
+<div class="container">
+  <h2>Users</h2>
+  <table class="table">
+    <thead>
+    <tr>
+      <th scope="col">Id</th>
+      <th scope="col">UserName</th>
+      <th scope="col">Email</th>
+      <th scope="col">Name</th>
+      <th scope="col">Admin</th>
+      <th scope="col">DefaultFamilyId</th>
+      <th scope="col">WeekStartDay</th>
+      <th scope="col">EmailVerified</th>
+    </tr>
+    </thead>
+
+    {% for user in Users %}
+    <tr>
+      <th scope="row">{{user.Id}}</th>
+      <td>{{user.UserName}}</td>
+      <td>{{user.Email}}</td>
+      <td>{{user.Name}}</td>
+      <td>{{user.Admin.Bool}}</td>
+      <td>{{user.DefaultFamilyId}}</td>
+      <td>{{user.WeekStartDay}}</td>
+      <td>{{user.EmailVerified.Bool}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+
+  <h2>Families</h2>
+  <table class="table">
+    <thead>
+    <tr>
+      <th scope="col">Id</th>
+      <th scope="col">UserId</th>
+      <th scope="col">Name</th>
+      <th scope="col">CreatedOn</th>
+      <th scope="col">AccountStatus</th>
+      <th scope="col">StatusExpiresOn</th>
+    </tr>
+    </thead>
+
+    {% for family in Families %}
+    <tr>
+      <th scope="row">{{family.Id}}</th>
+      <td>{{family.UserId}}</td>
+      <td>{{family.Name}}</td>
+      <td>{{family.CreatedOn}}</td>
+      <td>{{family.AccountStatus}}</td>
+      <td>{{family.StatusExpiresOn}}</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}

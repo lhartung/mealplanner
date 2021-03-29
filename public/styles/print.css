@@ -1,0 +1,33 @@
+body {
+    margin: 0;
+    padding 0;
+    font-size: 8pt;
+}
+
+.container {
+    width: auto;
+}
+
+.col-md-4 {
+    width: 33%;
+}
+
+.col-md-6 {
+    width: 50%;
+}
+
+h2 {
+    font-size: 1.2em;
+}
+
+ul.ingredients {
+    padding-left: 20px;
+}
+
+ul.meals {
+    padding-left: 20px;
+}
+
+input[type=checkbox] {
+    transform: scale(0.75);
+}
